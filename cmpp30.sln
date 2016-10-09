@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cmpp30", "cmpp30\cmpp30.csproj", "{CCA6E7E4-A727-47DD-89BD-E0304503C0ED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CMPPtest", "CMPPtest\CMPPtest.csproj", "{81C89259-28CA-4BBE-B63B-A6807EC73B65}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CCA6E7E4-A727-47DD-89BD-E0304503C0ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCA6E7E4-A727-47DD-89BD-E0304503C0ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCA6E7E4-A727-47DD-89BD-E0304503C0ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCA6E7E4-A727-47DD-89BD-E0304503C0ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81C89259-28CA-4BBE-B63B-A6807EC73B65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81C89259-28CA-4BBE-B63B-A6807EC73B65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81C89259-28CA-4BBE-B63B-A6807EC73B65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81C89259-28CA-4BBE-B63B-A6807EC73B65}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
