@@ -74,7 +74,7 @@ namespace cmpp30
         /// <summary>
         /// 最大空闲时间 超过发送链路检测包
         /// </summary>
-        private readonly int MaxFreeTime = 100;
+        private readonly int MaxFreeTime = 5;
         /// <summary>
         ///处理线程 
         ///保存响应到命令队列，响应操作
@@ -186,11 +186,10 @@ namespace cmpp30
                 //判断通道空闲时间间隔，进行超时处理
                 if (channelLastUpdate.AddSeconds(MaxFreeTime) < DateTime.Now)
                 {
-                    WriteLog("发送链路检测消息");
                     var err = Submit(new CMPP_ACTIVE_TEST());//
                     if (err != LocalErrCode.成功)
                     {
-                        channelLastUpdate.AddSeconds(10);//n秒后重试 防止过多发送
+                        channelLastUpdate = channelLastUpdate.AddSeconds(5);//n秒后重试 防止过多发送
                         WriteLog("长连接链路检测发送失败：" + err.ToString());
                     }
                 }
@@ -410,7 +409,7 @@ namespace cmpp30
                 StateReport(this, content);
             }
         }
-        
+
         /// <summary>
         /// 等待响应
         /// (循环取命令队列)
@@ -550,12 +549,16 @@ namespace cmpp30
                     client_sk.GetStream().Write(data, 0, data.Length);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 //写入操作失败，通道作废 移除命令
                 //
                 CloseSoket();
-                CmppCmdQueue.TryRemove(sendMsg.MyHead.Sequence_Id, out resp);
+                WriteLog(ex.Message);
+                if (waitResp)
+                {
+                    CmppCmdQueue.TryRemove(sendMsg.MyHead.Sequence_Id, out resp);
+                }
                 return LocalErrCode.通道不可用;
             }
             channelLastUpdate = DateTime.Now;

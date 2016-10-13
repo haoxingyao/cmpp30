@@ -293,7 +293,7 @@ namespace cmpp30
         /// <summary>
         /// 信息级别。
         /// </summary>
-        byte Msg_level = 10;
+        byte Msg_level = 5;
         /// <summary>
         /// 10 长度
         /// 业务标识，是数字、字母和符号的组合。
@@ -775,9 +775,26 @@ namespace cmpp30
     /// </summary>
     public class CMPP_ACTIVE_TEST_RESP : CMPPMsgBody_Base
     {
+        /// <summary>
+        /// 保留
+        /// </summary>
+        public byte Reserved { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sequenceId"></param>
         public CMPP_ACTIVE_TEST_RESP(uint sequenceId)
         {
-            MyHead = new CMPPMsgHeader(0, Command_Id.CMPP_ACTIVE_TEST_RESP, sequenceId);
+            BodyLength = 1;
+            MyHead = new CMPPMsgHeader(BodyLength, Command_Id.CMPP_ACTIVE_TEST_RESP, sequenceId);
+        }
+
+        public override byte[] WriteBytes()
+        {
+            byte[] msg = new byte[MyHead.Total_Length];
+            Tools.CopyAll(0, MyHead.Write(), ref msg);
+            msg[12] = Reserved;
+            return msg;
         }
     }
 }

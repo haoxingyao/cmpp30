@@ -161,6 +161,14 @@ namespace cmpp30
             }
             return localRes;
         }
+        /// <summary>
+        /// 链路检测
+        /// </summary>
+        /// <returns></returns>
+        public LocalErrCode ActiveTest()
+        {
+            return clien.Submit(new CMPP_ACTIVE_TEST(), true);
+        }
 
         //长短信分割字数
         private readonly int LongMsgSplitLength = 67;
