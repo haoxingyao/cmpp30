@@ -40,11 +40,7 @@ namespace cmpp30
         /// <summary>
         /// 命令队列
         /// </summary>
-        Dictionary<uint, object> SgipCmdQueue = new Dictionary<uint, object>();
-        /// <summary>
-        /// 命令队列访问冲突锁
-        /// </summary>
-        private object cmdQueueLockFlag = new object();//
+        System.Collections.Concurrent.ConcurrentDictionary<uint, CMPPMsgBody_Base> CmppCmdQueue = new System.Collections.Concurrent.ConcurrentDictionary<uint, CMPPMsgBody_Base>();
 
         ///// <summary>
         ///// 指令队列中最大排队长度(默认最大为16)
@@ -155,12 +151,9 @@ namespace cmpp30
                             #region 命令响应
                             case Command_Id.CMPP_SUBMIT_RESP:
                             case Command_Id.CMPP_ACTIVE_TEST_RESP:
-                                lock (cmdQueueLockFlag)
+                                if (CmppCmdQueue.ContainsKey(data.MyHead.Sequence_Id))
                                 {
-                                    if (SgipCmdQueue.ContainsKey(data.MyHead.Sequence_Id))
-                                    {
-                                        SgipCmdQueue[data.MyHead.Sequence_Id] = data;
-                                    }
+                                    CmppCmdQueue[data.MyHead.Sequence_Id] = data;
                                 }
                                 break;
                             #endregion
@@ -189,10 +182,16 @@ namespace cmpp30
                                 break;
                         }
                     }
-                    //判断通道空闲时间间隔，进行超时处理
-                    if (channelLastUpdate.AddSeconds(MaxFreeTime) < DateTime.Now)
+                }
+                //判断通道空闲时间间隔，进行超时处理
+                if (channelLastUpdate.AddSeconds(MaxFreeTime) < DateTime.Now)
+                {
+                    WriteLog("发送链路检测消息");
+                    var err = Submit(new CMPP_ACTIVE_TEST());//
+                    if (err != LocalErrCode.成功)
                     {
-                        Submit(new CMPP_ACTIVE_TEST());//
+                        channelLastUpdate.AddSeconds(10);//n秒后重试 防止过多发送
+                        WriteLog("长连接链路检测发送失败：" + err.ToString());
                     }
                 }
                 Thread.Sleep(10);//每个周期休眠10毫秒
@@ -411,38 +410,7 @@ namespace cmpp30
                 StateReport(this, content);
             }
         }
-        /// <summary>
-        /// 添加命令
-        /// </summary>
-        /// <returns></returns>
-        private bool AddCmdSequenceQueue(uint cmdSeq)
-        {
-            lock (cmdQueueLockFlag)
-            {
-                ///验证是否已发送
-                if (SgipCmdQueue.ContainsKey(cmdSeq))
-                {
-                    return false;//重复的命令序列号
-                }
-                SgipCmdQueue.Add(cmdSeq, null);//将命令加入队列
-                return true;
-            }
-        }
-        /// <summary>
-        /// 移除命令
-        /// </summary>
-        /// <param name="cmdSeq"></param>
-        private void RemoveCmdSequenceQueue(uint cmdSeq)
-        {
-            lock (cmdQueueLockFlag)
-            {
-                if (SgipCmdQueue.ContainsKey(cmdSeq))
-                {
-                    SgipCmdQueue.Remove(cmdSeq);//移除指令
-                }
-            }
-        }
-
+        
         /// <summary>
         /// 等待响应
         /// (循环取命令队列)
@@ -465,27 +433,19 @@ namespace cmpp30
                     return LocalErrCode.等待响应时通道已改变;
                     break;
                 }
-                CMPPMsgBody_Base tmp;
-                lock (cmdQueueLockFlag)
+                //CMPPMsgBody_Base tmp;
+                //验证当前队列中是否含有序列号
+                if (!CmppCmdQueue.TryGetValue(cmdSequence, out resp))
                 {
-                    //验证当前队列中是否含有序列号
-                    if (SgipCmdQueue.ContainsKey(cmdSequence))
-                    {
-                        //获取响应命令队列
-                        tmp = (CMPPMsgBody_Base)SgipCmdQueue[cmdSequence];
-                    }
-                    else
-                    {
-                        return LocalErrCode.指令异常丢失;//指令异常丢失
-                        break;
-                    }
+                    return LocalErrCode.指令异常丢失;//指令异常丢失
+                    break;
                 }
-                if (tmp != null)
+                if (resp != null)
                 {
                     //判断是否为期望的返回值
-                    if (((uint)tmp.MyHead.Command_Id & 0x7fffffffU) == cmdId)
+                    if (((uint)resp.MyHead.Command_Id & 0x7fffffffU) == cmdId)
                     {
-                        resp = tmp;
+                        CmppCmdQueue.TryRemove(cmdSequence, out resp);
                         return LocalErrCode.成功;
                     }
                     else
@@ -532,10 +492,7 @@ namespace cmpp30
             CloseSoket();
 
             //将队列中剩余未应答数据全部移除
-            lock (cmdQueueLockFlag)
-            {
-                SgipCmdQueue.Clear();
-            }
+            CmppCmdQueue.Clear();
         }
         /// <summary>
         /// 发送消息(同步等待服务器响应)
@@ -556,23 +513,13 @@ namespace cmpp30
                     return LocalErrCode.命令超时;
                 }
                 //添加命令队列
-                if (!AddCmdSequenceQueue(sendMsg.MyHead.Sequence_Id))
+                if (!CmppCmdQueue.TryAdd(sendMsg.MyHead.Sequence_Id, null))
                 {
                     return LocalErrCode.重复的命令序列号;//重复的命令序列号
                 }
             }
 
             cmdSendTime = DateTime.Now;
-            ////队列指令排队情况处理，队列总未处理指令不能超出指定值
-            //while (SgipCmdQueue.Count >= maxCmdQueue)
-            //{
-            //    Thread.Sleep(10);
-            //    if (cmdSendTime.AddSeconds(commandMaxTimeOut) < DateTime.Now)
-            //    {
-            //        //命令队列已满
-            //        return new SubmitResult(LocalErrCode.未响应命令达到上限请稍后);
-            //    }
-            //}
 
             //组件未启动，不能处理操作指令
             if (!runFlag)
@@ -608,7 +555,7 @@ namespace cmpp30
                 //写入操作失败，通道作废 移除命令
                 //
                 CloseSoket();
-                RemoveCmdSequenceQueue(sendMsg.MyHead.Sequence_Id);
+                CmppCmdQueue.TryRemove(sendMsg.MyHead.Sequence_Id, out resp);
                 return LocalErrCode.通道不可用;
             }
             channelLastUpdate = DateTime.Now;
@@ -618,8 +565,6 @@ namespace cmpp30
             {
                 LocalErrCode result = WaiteResp(cmdSendTime, currentChannelSN, (uint)sendMsg.MyHead.Command_Id, sendMsg.MyHead.Sequence_Id, out resp);
                 Monitor.Exit(waitRespLock);
-                //从队列中移除命令
-                RemoveCmdSequenceQueue(sendMsg.MyHead.Sequence_Id);
                 return result;//
             }
 
