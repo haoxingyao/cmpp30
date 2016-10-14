@@ -42,6 +42,7 @@ namespace cmpp30
         /// 运行商签名
         /// </summary>
         private string operatorSign = "";
+
         /// <summary>
         /// 日志输出
         /// </summary>
@@ -78,7 +79,7 @@ namespace cmpp30
         /// <param name="service_Id"></param>
         /// <param name="spNumber"></param>
         /// <param name="log"></param>
-        public Cmpp30(string ip, int port, string sp_id, string pwd, string service_Id, string spNumber, string sign, Action<string> log, int timeOutSecond)
+        public Cmpp30(string ip, int port, string sp_id, string pwd, string service_Id, string spNumber, string sign, Action<string> log, int timeOutSecond, int activeTestInterval)
         {
             WriteLog = new Action<string>((x) =>
             {
@@ -106,6 +107,7 @@ namespace cmpp30
             clien.StateReport = ClientStateReport;
             clien.UserMessageRecive = ClientMessageRecive;
             clien.MaxTimeOut = timeOutSecond;
+            clien.ActiveTestInterval = activeTestInterval;
         }
         /// <summary>
         /// 

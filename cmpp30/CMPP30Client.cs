@@ -42,10 +42,6 @@ namespace cmpp30
         /// </summary>
         System.Collections.Concurrent.ConcurrentDictionary<uint, CMPPMsgBody_Base> CmppCmdQueue = new System.Collections.Concurrent.ConcurrentDictionary<uint, CMPPMsgBody_Base>();
 
-        ///// <summary>
-        ///// 指令队列中最大排队长度(默认最大为16)
-        ///// </summary>
-        //private readonly int maxCmdQueue = 16;
         /// <summary>
         /// 等待命令响应锁
         /// 方便无需响应的响应包发送
@@ -72,10 +68,6 @@ namespace cmpp30
         /// </summary>
         private DateTime channelLastUpdate = DateTime.Now;
         /// <summary>
-        /// 最大空闲时间 超过发送链路检测包
-        /// </summary>
-        private readonly int MaxFreeTime = 5;
-        /// <summary>
         ///处理线程 
         ///保存响应到命令队列，响应操作
         /// </summary>
@@ -85,6 +77,10 @@ namespace cmpp30
         /// </summary>
         private bool runFlag = false;
 
+        /// <summary>
+        /// 发送链路检测包频率（秒）
+        /// </summary>
+        public int ActiveTestInterval = 5;
         /// <summary>
         /// 超时最长秒数(默认为60 S)
         /// </summary>
@@ -184,12 +180,12 @@ namespace cmpp30
                     }
                 }
                 //判断通道空闲时间间隔，进行超时处理
-                if (channelLastUpdate.AddSeconds(MaxFreeTime) < DateTime.Now)
+                if (channelLastUpdate.AddSeconds(ActiveTestInterval) < DateTime.Now)
                 {
                     var err = Submit(new CMPP_ACTIVE_TEST());//
                     if (err != LocalErrCode.成功)
                     {
-                        channelLastUpdate = channelLastUpdate.AddSeconds(5);//n秒后重试 防止过多发送
+                        channelLastUpdate = channelLastUpdate.AddSeconds(ActiveTestInterval);//n秒后重试 防止过多发送
                         WriteLog("长连接链路检测发送失败：" + err.ToString());
                     }
                 }
