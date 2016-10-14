@@ -78,7 +78,10 @@ namespace cmpp30
         /// <param name="pwd"></param>
         /// <param name="service_Id"></param>
         /// <param name="spNumber"></param>
-        /// <param name="log"></param>
+        /// <param name="sign"></param>
+        /// <param name="log">日志输出</param>
+        /// <param name="timeOutSecond">命令超时时间</param>
+        /// <param name="activeTestInterval">链路检测发送间隔</param>
         public Cmpp30(string ip, int port, string sp_id, string pwd, string service_Id, string spNumber, string sign, Action<string> log, int timeOutSecond, int activeTestInterval)
         {
             WriteLog = new Action<string>((x) =>

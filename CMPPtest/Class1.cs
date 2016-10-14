@@ -36,13 +36,13 @@ namespace CMPPtest
             string pwd = appSettings["pwd"];
             int timeOut = 30;
 #if DEBUG
-            serviceId = "123";
-            sp_id = "901234";
-            spNumber = "01850";
-            ip = "127.0.0.1";
-            port = 7891;
-            pwd = "1234";
-            timeOut = 6;
+            //serviceId = "123";
+            //sp_id = "901234";
+            //spNumber = "10620000";
+            //ip = "127.0.0.1";
+            //port = 7891;
+            //pwd = "1234";
+            //timeOut = 6;
 #endif
 
             string tel = appSettings["tel"];
@@ -53,7 +53,7 @@ namespace CMPPtest
                 Console.WriteLine(x);
             });
 
-            Cmpp30 cmpp = new Cmpp30(ip, port, sp_id, pwd, serviceId, spNumber, "", writeLog, timeOut);
+            Cmpp30 cmpp = new Cmpp30(ip, port, sp_id, pwd, serviceId, spNumber, "", writeLog, timeOut, 5);
             cmpp.MessageRecive = ReciveMessage;
             cmpp.StateReport = StateReport;
             Console.WriteLine("connect: " + ip);
@@ -63,11 +63,12 @@ namespace CMPPtest
             {
                 string action = Console.ReadLine();
                 CMPP_SUBMIT_RESP resp;
+                LocalErrCode result;
                 switch (action)
                 {
                     case "start": cmpp.Start(); break;
                     case "send":
-                        var result = cmpp.SendMsg(tel, content, out resp);
+                        result = cmpp.SendMsg(tel, content, out resp);
                         if (result != 0)
                         {
                             Console.WriteLine(result.ToString());
@@ -78,17 +79,24 @@ namespace CMPPtest
                         }
                         break;
                     case "stop": cmpp.Stop(); break;
+                    case "test":
+                        result = cmpp.ActiveTest();
+                        if (result != LocalErrCode.成功)
+                        {
+                            Console.WriteLine(result.ToString());
+                        }
+                        break;
                     //case "send99":
-                    //    for (int i = 0; i < 99; i++)
+                    //    for (int i = 0; i < 999; i++)
                     //    {
-                    //        var resul = client.Submit(new CMPP_SUBMIT(serviceId, sp_id, spNumber, tel, content), out resp);
-                    //        if (resul.ErrorCode != 0)
+                    //        result = cmpp.SendMsg(tel, content, out resp);
+                    //        if (result != 0)
                     //        {
-                    //            Console.WriteLine("main:" + resul.ErrorCode.ToString());
+                    //            Console.WriteLine(result.ToString());
                     //        }
                     //        else
                     //        {
-                    //            Console.WriteLine((i + 1) + "  " + (resp as CMPP_SUBMIT_RESP).Result);
+                    //            Console.WriteLine(resp.Result + "" + resp.Msg_Id);
                     //        }
                     //        System.Threading.Thread.Sleep(10);
                     //    }
